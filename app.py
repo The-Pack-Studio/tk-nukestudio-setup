@@ -13,7 +13,8 @@ import os
 import sys
 import traceback
 
-from PySide import QtCore
+# from PySide import QtCore
+from sgtk.platform.qt import QtCore
 
 from tank.platform import Application
 
