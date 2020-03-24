@@ -56,6 +56,7 @@ class setupNukestudio(Application):
             return None
 
         OCIOConfig = OCIOPath.replace("\\", '/')
+        self.log_debug("OOOOOOOOOOOOOOOOOocio is : %s" % OCIOConfig)
         return OCIOConfig
 
     def setProjectRoots_onNewProject_Callback(self):
@@ -65,19 +66,21 @@ class setupNukestudio(Application):
             for p in hiero.core.projects():
                 osNewPath = None
                 if sys.platform == "darwin":
-                    if p.projectRoot().startswith("//sledge/vol1/Projects") :
-                        osNewPath = p.projectRoot().replace("//sledge/vol1/Projects","/mnt/sledge/Projects")
+                    if p.exportRootDirectory().startswith("//sledge/vol1/Projects") :
+                        osNewPath = p.exportRootDirectory().replace("//sledge/vol1/Projects","/mnt/sledge/Projects")
                 elif sys.platform == "win32":
-                    if p.projectRoot().startswith("/mnt/sledge/Projects") :
-                        osNewPath = p.projectRoot().replace("/mnt/sledge/Projects","//sledge/vol1/Projects")
+                    if p.exportRootDirectory().startswith("/mnt/sledge/Projects") :
+                        osNewPath = p.exportRootDirectory().replace("/mnt/sledge/Projects","//sledge/vol1/Projects")
 
                 if osNewPath :
-                    print "tk-hiero-export path Replacement ", p.projectRoot() ," -> ", osNewPath
-                    p.setProjectRoot(osNewPath)
+                    print "tk-hiero-export path replacement ", p.exportRootDirectory() ," -> ", osNewPath
+                    p.setCustomExportDirectory(osNewPath)
 
-                if self.tank.project_path == p.projectRoot() or not p.projectRoot() or p.projectRoot() == "c:" :
+                if p.exportRootDirectory() == self.tank.project_path  or not p.exportRootDirectory() or p.exportRootDirectory() == "c:" :
                     print "tk-hiero-export path auto setting ", self.sgtk.roots["secondary"]
-                    p.setProjectRoot(self.sgtk.roots["secondary"])
+                    p.setCustomExportDirectory(self.sgtk.roots["secondary"])
         
+                p.setUseCustomExportDirectory(True)
+
         hiero.core.events.registerInterest('kAfterNewProjectCreated', secondaryProject)
         hiero.core.events.registerInterest('kAfterProjectLoad', secondaryProject)
