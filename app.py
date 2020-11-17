@@ -67,10 +67,10 @@ class setupNukestudio(Application):
                 osNewPath = None
                 if sys.platform == "darwin":
                     if p.exportRootDirectory().startswith("//sledge/vol1/Projects") :
-                        osNewPath = p.exportRootDirectory().replace("//sledge/vol1/Projects","/mnt/sledge/Projects")
+                        osNewPath = p.exportRootDirectory().replace("//sledge/vol1/Projects", "/Volumes/vol1/Projects")
                 elif sys.platform == "win32":
                     if p.exportRootDirectory().startswith("/mnt/sledge/Projects") :
-                        osNewPath = p.exportRootDirectory().replace("/mnt/sledge/Projects","//sledge/vol1/Projects")
+                        osNewPath = p.exportRootDirectory().replace("/Volumes/vol1/Projects", "//sledge/vol1/Projects")
 
                 if osNewPath :
                     print "tk-hiero-export path replacement ", p.exportRootDirectory() ," -> ", osNewPath
