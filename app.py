@@ -8,6 +8,7 @@
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights 
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
+from __future__ import print_function
 import re
 import os
 import sys
@@ -73,11 +74,11 @@ class setupNukestudio(Application):
                         osNewPath = p.exportRootDirectory().replace("/Volumes/vol1/Projects", "//sledge/vol1/Projects")
 
                 if osNewPath :
-                    print "tk-hiero-export path replacement ", p.exportRootDirectory() ," -> ", osNewPath
+                    print("tk-hiero-export path replacement ", p.exportRootDirectory() ," -> ", osNewPath)
                     p.setCustomExportDirectory(osNewPath)
 
                 if p.exportRootDirectory() == self.tank.project_path  or not p.exportRootDirectory() or p.exportRootDirectory() == "c:" :
-                    print "tk-hiero-export path auto setting ", self.sgtk.roots["secondary"]
+                    print("tk-hiero-export path auto setting ", self.sgtk.roots["secondary"])
                     p.setCustomExportDirectory(self.sgtk.roots["secondary"])
         
                 p.setUseCustomExportDirectory(True)
