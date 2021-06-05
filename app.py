@@ -1,13 +1,3 @@
-# Copyright (c) 2013 Shotgun Software Inc.
-# 
-# CONFIDENTIAL AND PROPRIETARY
-# 
-# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit 
-# Source Code License included in this distribution package. See LICENSE.
-# By accessing, using, copying or modifying this work you indicate your 
-# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights 
-# not expressly granted therein are reserved by Shotgun Software Inc.
-
 from __future__ import print_function
 import re
 import os
@@ -27,10 +17,20 @@ import hiero.core
 
 
 class setupNukestudio(Application):
+
     def init_app(self):
 
-        self.setProjectRoots_onNewProject_Callback()
         hiero.core.ApplicationSettings().setValue("ocioConfigFile", self.setOCIO())
+        hiero.core.events.registerInterest('kAfterNewProjectCreated', self.setExportRoot)
+        hiero.core.events.registerInterest('kAfterProjectLoad', self.setExportRoot)
+    
+    def destroy_app(self):
+        self.log_debug("Destroying tk-nukestudio-setup app")
+        
+        # remove any callbacks that were registered by the handler:
+        hiero.core.events.unregisterInterest('kAfterNewProjectCreated', self.setExportRoot)
+        hiero.core.events.unregisterInterest('kAfterProjectLoad', self.setExportRoot)
+
 
 
     @property
@@ -38,13 +38,10 @@ class setupNukestudio(Application):
         """
         Specifies that context changes are allowed.
         """
-        return True
-
-
+        return False
 
 
     def setOCIO(self):
-
 
         tk = self.sgtk
         root = tk.roots['secondary']
@@ -56,32 +53,55 @@ class setupNukestudio(Application):
             self.log_debug("No %s file on disk" % OCIOPath)
             return None
 
-        OCIOConfig = OCIOPath.replace("\\", '/')
-        self.log_debug("OOOOOOOOOOOOOOOOOocio is : %s" % OCIOConfig)
+        OCIOConfig = OCIOPath.replace(os.path.sep, '/')
+        self.log_debug("Setting Ocio to : %s" % OCIOConfig)
         return OCIOConfig
 
-    def setProjectRoots_onNewProject_Callback(self):
+  
+    def setExportRoot(self, event):
+
+        project = event.project
+
+        # Always use the CustomExportDirectory
+        project.setUseCustomExportDirectory(True)
+
+        exportPath = project.exportRootDirectory()
+        newExportPath = exportPath
+
+        if sys.platform.startswith("win32"):
+            newExportPath = newExportPath.replace("/Volumes/vol1/Projects", "//sledge/vol1/Projects")
+            newExportPath = newExportPath.replace("/mnt/vol1/Projects", "//sledge/vol1/Projects")
+            newExportPath = newExportPath.replace("Y:/Projects", "//sledge/vol1/Projects")
+
+        elif sys.platform.startswith("darwin"):
+            newExportPath = newExportPath.replace("//sledge/vol1/Projects", "/Volumes/vol1/Projects")
+            newExportPath = newExportPath.replace("//Sledge/vol1/Projects", "/Volumes/vol1/Projects")
+            newExportPath = newExportPath.replace("Y:/Projects", "/Volumes/vol1/Projects")
+
+            newExportPath = newExportPath.replace("/mnt/vol1/Projects", "/Volumes/vol1/Projects")
+
+        elif sys.platform.startswith("linux"):
+            newExportPath = newExportPath.replace("//sledge/vol1/Projects", "/mnt/vol1/Projects")
+            newExportPath = newExportPath.replace("//Sledge/vol1/Projects", "/mnt/vol1/Projects")
+            newExportPath = newExportPath.replace("Y:/Projects", "/mnt/vol1/Projects")
+
+            newExportPath = newExportPath.replace("/Volumes/vol1/Projects", "/mnt/vol1/Projects")
+
+
+        if newExportPath != exportPath :
+            self.log_debug("Replacing the original exportRootDirectory value from %s to %s" % (exportPath, newExportPath))
+            project.setCustomExportDirectory(newExportPath)
+
+        # the tk-nukestudio engine sets the exportRootDirectory to tank.project_path,
+        # tank.project_path = \\server01\shared2\projects\xxxxxxxxx,
+        # so we replace it
+        if project.exportRootDirectory() == self.tank.project_path  or not project.exportRootDirectory() or project.exportRootDirectory() == "c:":
+            exportPath = self.sgtk.roots["secondary"]
+            exportPath = exportPath.replace(os.path.sep, "/")
+
+            self.log_debug("Setting the exportRootDirectory to %s" % exportPath)
+            project.setCustomExportDirectory(exportPath)
+
         
-        def secondaryProject(event):
 
-            for p in hiero.core.projects():
-                osNewPath = None
-                if sys.platform == "darwin":
-                    if p.exportRootDirectory().startswith("//sledge/vol1/Projects") :
-                        osNewPath = p.exportRootDirectory().replace("//sledge/vol1/Projects", "/Volumes/vol1/Projects")
-                elif sys.platform == "win32":
-                    if p.exportRootDirectory().startswith("/mnt/sledge/Projects") :
-                        osNewPath = p.exportRootDirectory().replace("/Volumes/vol1/Projects", "//sledge/vol1/Projects")
 
-                if osNewPath :
-                    print("tk-hiero-export path replacement ", p.exportRootDirectory() ," -> ", osNewPath)
-                    p.setCustomExportDirectory(osNewPath)
-
-                if p.exportRootDirectory() == self.tank.project_path  or not p.exportRootDirectory() or p.exportRootDirectory() == "c:" :
-                    print("tk-hiero-export path auto setting ", self.sgtk.roots["secondary"])
-                    p.setCustomExportDirectory(self.sgtk.roots["secondary"])
-        
-                p.setUseCustomExportDirectory(True)
-
-        hiero.core.events.registerInterest('kAfterNewProjectCreated', secondaryProject)
-        hiero.core.events.registerInterest('kAfterProjectLoad', secondaryProject)
